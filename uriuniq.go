@@ -112,6 +112,8 @@ func getCharset(opts Options) []byte {
 }
 
 // randString generates a random string of given length from charset.
+//
+//	allow a maximum of 256 characters
 func randString(length, maxBadReads int, charset []byte) (string, error) {
 	if length == 0 {
 		return "", nil

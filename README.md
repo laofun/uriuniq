@@ -5,7 +5,7 @@
 ## Features
 
 - **Customizable Length**: Tailor the string length to fit your requirements.
-- **Character Set Options**: Choose from numeric, lowercase, uppercase, alphanumeric, or custom sets.
+- **Character Set Options**: Choose from numeric, lowercase, uppercase, alphanumeric, or custom sets (allow a maximum of 256 chars).
 - **Collision Resistance**: Reduces the chance of generating duplicate identifiers.
 
 ## Installation

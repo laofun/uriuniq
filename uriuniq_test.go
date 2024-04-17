@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-// TestGenerateDefaultOptions checks default options string generation.
-func TestGenerateDefaultOptions(t *testing.T) {
+// TestDefaultOptions validates string generation with default options.
+func TestDefaultOptions(t *testing.T) {
 	opts := NewOpts()
 	result, err := Generate(opts)
 	if err != nil {
@@ -17,8 +17,8 @@ func TestGenerateDefaultOptions(t *testing.T) {
 	}
 }
 
-// TestGenerateOptionsExclusions tests exclusion flags in Options.
-func TestGenerateOptionsExclusions(t *testing.T) {
+// TestOptionsExclusions verifies that exclusion flags function correctly.
+func TestOptionsExclusions(t *testing.T) {
 	tests := []struct {
 		name              string
 		excludeNumeric    bool
@@ -54,7 +54,7 @@ func TestGenerateOptionsExclusions(t *testing.T) {
 	}
 }
 
-// TestCustomCharset checks custom charset functionality.
+// TestCustomCharset ensures custom charset is correctly used.
 func TestCustomCharset(t *testing.T) {
 	customCharset := "abc123"
 	opts := NewOpts()
@@ -70,12 +70,12 @@ func TestCustomCharset(t *testing.T) {
 	}
 }
 
-// TestGenerateOptionsLength tests different Length values in Options.
-func TestGenerateOptionsLength(t *testing.T) {
+// TestOptionsLength checks handling of various string lengths.
+func TestOptionsLength(t *testing.T) {
 	tests := []struct {
 		name   string
 		length int
-		valid  bool // indicates valid length
+		valid  bool
 	}{
 		{"Zero Length", 0, false},
 		{"Negative Length", -1, false},
@@ -103,15 +103,15 @@ func TestGenerateOptionsLength(t *testing.T) {
 	}
 }
 
-// TestGenerateCustomCharsetURISafeWithWarning tests custom charset URI-safety.
-func TestGenerateCustomCharsetURISafeWithWarning(t *testing.T) {
+// TestCharsetURISafe validates custom charset URI-safety.
+func TestCharsetURISafe(t *testing.T) {
 	tests := []struct {
 		name          string
 		customCharset string
 		expectError   bool
 	}{
 		{"Valid URI-safe Charset", "abcABC123-_!~*'()", false},
-		{"Invalid URI-safe Charset with Warning", "abcABC123<>#", false},
+		{"Invalid Charset", "abcABC123<>#", false},
 	}
 
 	for _, tc := range tests {
@@ -123,5 +123,76 @@ func TestGenerateCustomCharsetURISafeWithWarning(t *testing.T) {
 				t.Errorf("%s: Error expectation mismatch", tc.name)
 			}
 		})
+	}
+}
+
+// TestCharsetLength checks for appropriate error handling of charset length.
+func TestCharsetLength(t *testing.T) {
+	tests := []struct {
+		name     string
+		charset  []byte
+		expected string
+	}{
+		{"Too Short Charset", []byte("a"), "uriuniq: charset size 2-256"},
+		{"Min Charset Length", []byte("ab"), ""},
+		{"Max Charset Length", make([]byte, 256), ""},
+		{"Too Long Charset", make([]byte, 257), "uriuniq: charset size 2-256"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := randString(10, DefaultMaxBadReads, tc.charset)
+			if (err != nil && err.Error() != tc.expected) || (err == nil && tc.expected != "") {
+				t.Errorf("%s failed: expected error '%s', got '%v'", tc.name, tc.expected, err)
+			}
+		})
+	}
+}
+
+// BenchmarkGenerateDefault benchmarks the default generation.
+func BenchmarkGenerateDefault(b *testing.B) {
+	opts := NewOpts()
+	for i := 0; i < b.N; i++ {
+		_, err := Generate(opts)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkGenerateCustom benchmarks the custom generation with specific length and exclusion of uppercase characters.
+func BenchmarkGenerateCustom(b *testing.B) {
+	opts := NewOpts()
+	opts.Length = 30
+	opts.ExcludeUppercase = true
+	for i := 0; i < b.N; i++ {
+		_, err := Generate(opts)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+func BenchmarkGenerateLen1024(b *testing.B) {
+	opts := NewOpts()
+	opts.Length = 1024
+	for i := 0; i < b.N; i++ {
+		_, _ = Generate(opts)
+	}
+}
+
+// BenchmarkCheckDuplication benchmarks the generation and checks for duplication.
+func BenchmarkCheckDuplication(b *testing.B) {
+	opts := NewOpts() // Using default settings
+	idSet := make(map[string]bool)
+	for i := 0; i < b.N; i++ {
+		result, err := Generate(opts)
+		if err != nil {
+			b.Fatal(err) // Stop benchmark if there is an error
+		}
+		// Check for duplication
+		if _, exists := idSet[result]; exists {
+			b.Fatal("Duplicate ID found")
+		}
+		idSet[result] = true
 	}
 }
